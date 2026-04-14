@@ -727,9 +727,10 @@ define([
                     }
 
                      if (me.btnCommentResolve) {
+                        var canResolveToolbar = (config.canResolveComments !== undefined) ? config.canResolveComments : config.canEditComments;
                         var items = [
                             {
-                                caption: config.canEditComments ? me.txtCommentResolveCurrent : me.txtCommentResolveMyCurrent,
+                                caption: canResolveToolbar ? me.txtCommentResolveCurrent : me.txtCommentResolveMyCurrent,
                                 value: 'current'
                             },
                             {
@@ -737,7 +738,7 @@ define([
                                 value: 'my'
                             }
                         ];
-                        if (config.canEditComments)
+                        if (canResolveToolbar)
                             items.push({
                                 caption: me.txtCommentResolveAll,
                                 value: 'all'

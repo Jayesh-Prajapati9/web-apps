@@ -1209,6 +1209,7 @@ define([
                 AscCommon.UserInfoParser.setParser(true);
                 AscCommon.UserInfoParser.setCurrentName(this.appOptions.user.fullname);
                 this.appOptions.canUseCommentPermissions && AscCommon.UserInfoParser.setCommentPermissions(this.permissions.commentGroups);
+                this.appOptions.canResolveComments = this.appOptions.canEditComments || (!!this.permissions.commentGroups && Object.prototype.hasOwnProperty.call(this.permissions.commentGroups, 'resolve'));
                 this.appOptions.canUseUserInfoPermissions && AscCommon.UserInfoParser.setUserInfoPermissions(this.permissions.userInfoGroups);
                 appHeader.setUserName(AscCommon.UserInfoParser.getParsedName(AscCommon.UserInfoParser.getCurrentName()));
                 appHeader.setUserId(this.appOptions.user.id);

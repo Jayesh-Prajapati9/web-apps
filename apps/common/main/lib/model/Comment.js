@@ -58,6 +58,14 @@ define([
             parsedGroups        : undefined,
             usercolor           : null,
             date                : undefined,
+            editTime            : null,
+            editDate            : null,
+            editUserId          : null,
+            editUserName        : null,
+            resolveTime         : null,
+            resolveDate         : null,
+            resolveUserId       : null,
+            resolveUserName     : null,
             quote               : '',
             comment             : '',
             resolved            : false,
@@ -83,7 +91,8 @@ define([
             fullInfoInHint      : false,
             dummy               : undefined,
             editable            : true,
-            removable           : true
+            removable           : true,
+            canResolve          : true
         }
     });
     Common.Models.Reply = Backbone.Model.extend({

@@ -310,32 +310,33 @@ define([
         },
 
         onResolveComment: function (uid) {
-            var t = this, reply = null, comment = t.findComment(uid);
+            var t = this, comment = t.findComment(uid);
 
             if (_.isUndefined(uid)) {
                 uid = comment.get('uid');
             }
 
             if (comment) {
-                var ascComment = t.buildComment(comment);
-                if (!ascComment) {
-                    return false;
+                var isResolved = !comment.get('resolved');
+                if (t.api.asc_resolveComment) {
+                    t.api.asc_resolveComment(uid, isResolved);
+                } else {
+                    var ascComment = t.buildComment(comment);
+                    if (!ascComment) {
+                        return false;
+                    }
+                    ascComment.asc_putSolved(isResolved);
+                    var reply = comment.get('replys');
+                    if (reply && reply.length) {
+                        reply.forEach(function (replyItem) {
+                            var ascReply = t.buildReplyComment(replyItem);
+                            if (ascReply) {
+                                ascComment.asc_addReply(ascReply);
+                            }
+                        });
+                    }
+                    t.api.asc_changeComment(uid, ascComment);
                 }
-
-                ascComment.asc_putSolved(!comment.get('resolved'));
-
-                reply = comment.get('replys');
-                if (reply && reply.length) {
-                    reply.forEach(function (reply) {
-                        var ascReply = t.buildReplyComment(reply);
-                        if (ascReply) {
-                            ascComment.asc_addReply(ascReply);
-                        }
-                    });
-                }
-
-                t.api.asc_changeComment(uid, ascComment);
-
                 return true;
             }
 
@@ -780,8 +781,24 @@ define([
                 comment.set('time',     date ? date.getTime() : null);
                 comment.set('date',     date ? t.dateToLocaleTimeString(date) : null);
                 comment.set('editable', (t.mode.canEditComments || (userid == t.currentUserId)) && AscCommon.UserInfoParser.canEditComment(data.asc_getUserName()));
+                comment.set('canResolve', (t.mode.canEditComments || (userid == t.currentUserId)) && AscCommon.UserInfoParser.canResolveComment(data.asc_getUserName()));
                 comment.set('removable', (t.mode.canDeleteComments || (userid == t.currentUserId)) && AscCommon.UserInfoParser.canDeleteComment(data.asc_getUserName()));
                 comment.set('hide', hideComment);
+                var editDate = null, resolveDate = null;
+                if (data.asc_getEditTime && data.asc_getEditTime()) {
+                    editDate = new Date(this.stringOOToLocalDate(data.asc_getEditTime()));
+                }
+                if (data.asc_getResolveTime && data.asc_getResolveTime()) {
+                    resolveDate = new Date(this.stringOOToLocalDate(data.asc_getResolveTime()));
+                }
+                comment.set('editTime', data.asc_getEditTime ? data.asc_getEditTime() : null);
+                comment.set('editDate', editDate ? t.dateToLocaleTimeString(editDate) : null);
+                comment.set('editUserId', data.asc_getEditUserId ? data.asc_getEditUserId() : null);
+                comment.set('editUserName', data.asc_getEditUserName ? data.asc_getEditUserName() : null);
+                comment.set('resolveTime', data.asc_getResolveTime ? data.asc_getResolveTime() : null);
+                comment.set('resolveDate', resolveDate ? t.dateToLocaleTimeString(resolveDate) : null);
+                comment.set('resolveUserId', data.asc_getResolveUserId ? data.asc_getResolveUserId() : null);
+                comment.set('resolveUserName', data.asc_getResolveUserName ? data.asc_getResolveUserName() : null);
 
                 if (!comment.get('hide')) {
                     var usergroups = comment.get('parsedGroups');
@@ -1323,6 +1340,14 @@ define([
                 userdata            : data.asc_getUserData(),
                 id                  : Common.UI.getId(),
                 time                : date ? date.getTime() : null,
+                editTime            : data.asc_getEditTime ? data.asc_getEditTime() : null,
+                editDate            : (data.asc_getEditTime && data.asc_getEditTime()) ? this.dateToLocaleTimeString(new Date(this.stringOOToLocalDate(data.asc_getEditTime()))) : null,
+                editUserId          : data.asc_getEditUserId ? data.asc_getEditUserId() : null,
+                editUserName        : data.asc_getEditUserName ? data.asc_getEditUserName() : null,
+                resolveTime         : data.asc_getResolveTime ? data.asc_getResolveTime() : null,
+                resolveDate         : (data.asc_getResolveTime && data.asc_getResolveTime()) ? this.dateToLocaleTimeString(new Date(this.stringOOToLocalDate(data.asc_getResolveTime()))) : null,
+                resolveUserId       : data.asc_getResolveUserId ? data.asc_getResolveUserId() : null,
+                resolveUserName     : data.asc_getResolveUserName ? data.asc_getResolveUserName() : null,
                 showReply           : false,
                 editText            : false,
                 last                : undefined,
@@ -1331,6 +1356,7 @@ define([
                 hideAddReply        : !_.isUndefined(this.hidereply) ? this.hidereply : (this.showPopover ? true : false),
                 scope               : this.view,
                 editable            : (this.mode.canEditComments || (userid == this.currentUserId)) && AscCommon.UserInfoParser.canEditComment(data.asc_getUserName()),
+                canResolve          : (this.mode.canEditComments || (userid == this.currentUserId)) && AscCommon.UserInfoParser.canResolveComment(data.asc_getUserName()),
                 removable           : (this.mode.canDeleteComments || (userid == this.currentUserId)) && AscCommon.UserInfoParser.canDeleteComment(data.asc_getUserName()),
                 hide                : !AscCommon.UserInfoParser.canViewComment(data.asc_getUserName()),
                 hint                : !this.mode.canComments,
@@ -1668,6 +1694,16 @@ define([
             ascComment.asc_putSolved(comment.get('resolved'));
             ascComment.asc_putGuid(comment.get('guid'));
             ascComment.asc_putUserData(comment.get('userdata'));
+            if (ascComment.asc_putEditTime) {
+                ascComment.asc_putEditTime(comment.get('editTime'));
+                ascComment.asc_putEditUserId(comment.get('editUserId'));
+                ascComment.asc_putEditUserName(comment.get('editUserName'));
+            }
+            if (ascComment.asc_putResolveTime) {
+                ascComment.asc_putResolveTime(comment.get('resolveTime'));
+                ascComment.asc_putResolveUserId(comment.get('resolveUserId'));
+                ascComment.asc_putResolveUserName(comment.get('resolveUserName'));
+            }
 
             if (!_.isUndefined(ascComment.asc_putDocumentFlag)) {
                 ascComment.asc_putDocumentFlag(comment.get('unattached'));

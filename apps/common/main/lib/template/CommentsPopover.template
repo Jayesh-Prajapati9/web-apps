@@ -13,7 +13,15 @@
         ><% if (!avatar) { %><%-initials%><% } %></div>
         <div class="user-info-text">
             <div class="user-name"><%= scope.getEncodedName(parsedName) %></div>
-            <div class="user-date"><%=date%></div>
+            <div class="user-date">
+                <%=date%>
+                <% if (editDate !== null) { %>
+                    <span class="edit-indicator">(<%=textEdited%> <%= scope.getEncodedName(editUserName || username) %>, <%=editDate%>)</span>
+                <% } %>
+            </div>
+            <% if (resolved && resolveDate !== null) { %>
+                <div class="resolve-info"><span class="resolve-indicator"><%=textResolvedBy%> <%= scope.getEncodedName(resolveUserName || username) %>, <%=resolveDate%></span></div>
+            <% } %>
         </div>
     </div>
     <% if (!editTextInPopover || (hint && !fullInfoInHint) || scope.viewmode) { %>
@@ -99,9 +107,9 @@
                     <div class="btn-delete img-commonctrl"></div>
                 <% } %>
             <% } %>
-            <% if (editable && (fullInfoInHint || !hint) && !scope.viewmode) { %>
+            <% if (canResolve && (fullInfoInHint || !hint) && !scope.viewmode) { %>
                 <div class="btn-resolve <% if (resolved) print('img-commonctrl comment-resolved') %>" data-toggle="tooltip"></div>
-            <% } else if ((fullInfoInHint || !hint) && (!editable || scope.viewmode) && resolved) { %>
+            <% } else if ((fullInfoInHint || !hint) && (!canResolve || scope.viewmode) && resolved) { %>
                 <div class="icon-resolve i-comment-resolved img-commonctrl" data-toggle="tooltip"></div>
             <% } %>
         </div>
